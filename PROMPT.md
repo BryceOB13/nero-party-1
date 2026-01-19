@@ -1,8 +1,8 @@
-# Fullstack Take-Home: Nero Party
+# Welcome to Nero Party!
 
-## Overview
+## Here's an Overview
 
-Build a **listening party app** where users can:
+We want you to build a **listening party app** where users can:
 - Create a listening party and invite friends
 - Add songs to a shared queue
 - Listen together in real-time
@@ -13,7 +13,7 @@ How the winner is determined is **up to you**. Users must be able to express pre
 ## Requirements
 
 **Must have:**
-- Create a party (with configurable end condition: song limit, time limit, or manual)
+- Create a party (with configurable conditions like: max song limit, max time limit, or whatever else you think is useful for a host)
 - Shareable way to join a party
 - Add songs to the queue (Spotify integration for search/playback)
 - Songs play for all participants
@@ -46,13 +46,13 @@ You'll need to integrate with **Spotify's API** for song search and playback.
 ## Deliverables
 
 1. **GitHub repo** with your code
-2. **Local setup instructions** in the README (we should be able to run it)
+2. **Local setup instructions** in the README (we MUST to be able to run it)
 3. **3-5 minute video walkthrough** explaining your UI/UX decisions and technical approach (Loom or similar is fine)
 
 ## Time
 
 - **Deadline:** 1 week from receipt
-- **Expected effort:** 3-5 hours (not more)
+- **Expected effort:** 3-5 hours
 - **AI tools:** Explicitly encouraged. This scope assumes you're using Claude Code, Cursor, Windsurf, or similar.
 
 ## Questions?
