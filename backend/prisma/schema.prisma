@@ -7,4 +7,277 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-// Design your schema here
+// PartyTheme - An overarching constraint set by the host that applies to ALL rounds
+model PartyTheme {
+  id          String    @id @default(cuid())
+  name        String
+  description String
+  icon        String
+  constraints String    // JSON string for ThemeConstraints
+  isCustom    Boolean   @default(false)
+  
+  // Relations
+  parties     Party[]
+}
+
+// RoundTheme - A specific theme for individual rounds
+model RoundTheme {
+  id              String    @id @default(cuid())
+  name            String
+  prompt          String
+  votingPrompt    String
+  icon            String
+  bonusMultiplier Float     @default(1.0)
+  
+  // Relations
+  rounds          Round[]
+}
+
+// Round - A round within a party linking theme and songs
+model Round {
+  id          String      @id @default(cuid())
+  partyId     String
+  roundNumber Int
+  themeId     String?
+  
+  // Relations
+  party       Party       @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  theme       RoundTheme? @relation(fields: [themeId], references: [id])
+  songs       Song[]
+  
+  @@index([partyId])
+}
+
+// Party - A game session identified by a unique 4-character code
+model Party {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  status      String   @default("LOBBY") // LOBBY, SUBMITTING, PLAYING, FINALE, COMPLETE
+  hostId      String
+  isDemoMode  Boolean  @default(false) // Whether this is a demo party
+  
+  // Settings stored as JSON string
+  settings    String   @default("{\"songsPerPlayer\":2,\"playDuration\":45,\"submissionTimerMinutes\":null,\"enableConfidenceBetting\":true,\"enableProgressiveWeighting\":true,\"bonusCategoryCount\":2}")
+  
+  // Competitive features
+  partyThemeId String?
+  
+  createdAt   DateTime @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  
+  // Relations
+  partyTheme    PartyTheme? @relation(fields: [partyThemeId], references: [id])
+  players       Player[]
+  songs         Song[]
+  identities    PartyIdentity[]
+  bonusResults  BonusResult[]
+  rounds        Round[]
+  activeEvents  ActiveEvent[]
+  predictions   RoundPrediction[]
+  
+  @@index([code])
+}
+
+// Player - A participant in a Party who submits songs and votes
+model Player {
+  id        String   @id @default(uuid())
+  name      String
+  avatarUrl String?
+  partyId   String
+  isHost    Boolean  @default(false)
+  isReady   Boolean  @default(false)
+  status    String   @default("CONNECTED") // CONNECTED, DISCONNECTED, KICKED
+  socketId  String?
+  joinedAt  DateTime @default(now())
+  
+  // Competitive features
+  powerUpPoints Int      @default(0)  // Points available for purchasing power-ups
+  
+  // Relations
+  party         Party          @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  identity      PartyIdentity?
+  submittedSongs Song[]        @relation("SubmittedSongs")
+  votes         Vote[]
+  bonusWins     BonusResult[]
+  achievements  PlayerAchievement[]
+  powerUps      PlayerPowerUp[]
+  predictions   RoundPrediction[]
+  
+  @@index([partyId])
+  @@index([socketId])
+}
+
+// PartyIdentity - Anonymous identity assigned to a player during gameplay
+model PartyIdentity {
+  id          String   @id @default(uuid())
+  partyId     String
+  playerId    String   @unique
+  alias       String
+  silhouette  String
+  color       String
+  isRevealed  Boolean  @default(false)
+  revealedAt  DateTime?
+  revealOrder Int?
+  
+  // Relations
+  party  Party  @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@index([partyId])
+}
+
+// Song - A music submission from a player
+model Song {
+  id           String   @id @default(uuid())
+  partyId      String
+  submitterId  String
+  
+  // SoundCloud data
+  soundcloudId BigInt
+  title        String
+  artist       String
+  artworkUrl   String
+  duration     Int      // milliseconds
+  permalinkUrl String
+  
+  // Game data
+  confidence   Int      // 1-5
+  roundNumber  Int
+  queuePosition Int     @default(0)
+  
+  // Round relation for competitive mode
+  roundId      String?
+  
+  // Results (populated after voting)
+  rawAverage         Float?
+  weightedScore      Float?
+  confidenceModifier Float?
+  finalScore         Float?
+  voteDistribution   String? // JSON array of vote counts per rating
+  
+  submittedAt DateTime @default(now())
+  
+  // Relations
+  party       Party        @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  submitter   Player       @relation("SubmittedSongs", fields: [submitterId], references: [id], onDelete: Cascade)
+  round       Round?       @relation(fields: [roundId], references: [id])
+  votes       Vote[]
+  bonusWins   BonusResult[]
+  powerUpsUsed PlayerPowerUp[]  // Power-ups that were used on this song
+  
+  @@index([partyId])
+  @@index([submitterId])
+  @@index([roundId])
+}
+
+// Vote - A rating given by a player to a song
+model Vote {
+  id       String   @id @default(uuid())
+  songId   String
+  voterId  String
+  rating   Int      // 1-10
+  isLocked Boolean  @default(false)
+  votedAt  DateTime @default(now())
+  lockedAt DateTime?
+  
+  // Competitive features
+  themeAdherenceRating Int?      // 1-5 rating for how well song fits the round theme
+  superVote            Boolean   @default(false)  // Whether this vote counts as 1.5x weight (costs 2 points)
+  comment              String?   // Optional comment (roast or praise) revealed during finale
+  
+  // Relations
+  song  Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  voter Player @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  
+  @@unique([songId, voterId])
+  @@index([songId])
+  @@index([voterId])
+}
+
+// BonusResult - Special award given during the finale
+model BonusResult {
+  id             String @id @default(uuid())
+  partyId        String
+  categoryId     String
+  categoryName   String
+  winningSongId  String
+  winnerPlayerId String
+  points         Int    @default(10)
+  revealOrder    Int
+  
+  // Relations
+  party        Party  @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  winningSong  Song   @relation(fields: [winningSongId], references: [id], onDelete: Cascade)
+  winnerPlayer Player @relation(fields: [winnerPlayerId], references: [id], onDelete: Cascade)
+  
+  @@index([partyId])
+}
+
+// PlayerAchievement - An unlockable award with bonus points earned for memorable plays
+model PlayerAchievement {
+  id            String    @id @default(cuid())
+  playerId      String
+  achievementId String
+  unlockedAt    DateTime  @default(now())
+  partyId       String
+  bonusPoints   Int
+  
+  // Relations
+  player        Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@index([playerId])
+  @@index([partyId])
+}
+
+// PlayerPowerUp - A strategic item players can earn or purchase to gain advantages
+model PlayerPowerUp {
+  id           String    @id @default(cuid())
+  playerId     String
+  powerUpId    String    // The power-up type ID (e.g., "sneak-peek", "unmask", etc.)
+  purchasedAt  DateTime  @default(now())
+  usedAt       DateTime? // Null if not used yet
+  usedOnSongId String?   // Optional, for power-ups used on specific songs
+  
+  // Relations
+  player       Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  song         Song?     @relation(fields: [usedOnSongId], references: [id])
+  
+  @@index([playerId])
+}
+
+// ActiveEvent - A mini-event that has been triggered during gameplay
+model ActiveEvent {
+  id              String    @id @default(cuid())
+  partyId         String
+  eventId         String
+  triggeredAt     DateTime  @default(now())
+  roundNumber     Int?
+  affectedPlayers String    // JSON array of player IDs
+  resolved        Boolean   @default(false)
+  
+  // Relations
+  party           Party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  
+  @@index([partyId])
+}
+
+// RoundPrediction - A player's prediction about round outcomes for bonus points
+model RoundPrediction {
+  id              String    @id @default(cuid())
+  playerId        String
+  roundNumber     Int       // The round this prediction is for
+  partyId         String    // Party context for the prediction
+  predictions     String    // JSON string containing prediction data (winner, loser, avg)
+  pointsEarned    Int       @default(0)
+  submittedAt     DateTime  @default(now())
+  evaluatedAt     DateTime? // Null until evaluated
+  
+  // Relations
+  player          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  party           Party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  
+  @@unique([playerId, partyId, roundNumber])
+  @@index([playerId])
+  @@index([partyId])
+}
