@@ -136,7 +136,13 @@ app.get("/api/soundcloud/search", async (req, res) => {
     res.json({ tracks });
   } catch (error: any) {
     console.error("Search error:", error);
-    res.status(500).json({
+    
+    // Return appropriate status code based on error
+    const statusCode = error.code === 'SOUNDCLOUD_API_ERROR' && error.message?.includes('Rate limit') 
+      ? 429 
+      : 500;
+    
+    res.status(statusCode).json({
       error: error.message || "Search failed",
       code: error.code || "SEARCH_ERROR"
     });
@@ -195,12 +201,6 @@ io.on("connection", async (socket) => {
     await socketService.handlePlayingLockVote(socket, data);
   });
 
-  // Finale events (placeholders for future implementation)
-  socket.on("finale:reaction", async (data) => {
-    // Will be implemented in Task 11.8
-    console.log("finale:reaction", data);
-  });
-
   // State sync for reconnection - handled by socket service
   socket.on("state:sync_request", async () => {
     // Get player by socket ID and trigger reconnection flow
@@ -211,7 +211,7 @@ io.on("connection", async (socket) => {
         message: "State sync requested - use connection:reconnect for full session restoration"
       });
     }
-    console.log("state:sync_request");
+
   });
 });
 

@@ -118,12 +118,12 @@ export class SongService {
       },
     });
 
-    // Convert to typed interface
+    // Convert to typed interface (convert BigInt to Number for JSON serialization)
     const song: Song = {
       id: songRecord.id,
       partyId: songRecord.partyId,
       submitterId: songRecord.submitterId,
-      soundcloudId: songRecord.soundcloudId,
+      soundcloudId: Number(songRecord.soundcloudId),
       title: songRecord.title,
       artist: songRecord.artist,
       artworkUrl: songRecord.artworkUrl,
@@ -158,6 +158,45 @@ export class SongService {
   }
 
   /**
+   * Gets a single song by ID.
+   * 
+   * @param songId - The song's unique ID
+   * @returns The song if found, null otherwise
+   */
+  async getSong(songId: string): Promise<Song | null> {
+    const songRecord = await prisma.song.findUnique({
+      where: { id: songId },
+    });
+
+    if (!songRecord) {
+      return null;
+    }
+
+    return {
+      id: songRecord.id,
+      partyId: songRecord.partyId,
+      submitterId: songRecord.submitterId,
+      soundcloudId: Number(songRecord.soundcloudId),
+      title: songRecord.title,
+      artist: songRecord.artist,
+      artworkUrl: songRecord.artworkUrl,
+      duration: songRecord.duration,
+      permalinkUrl: songRecord.permalinkUrl,
+      confidence: songRecord.confidence as 1 | 2 | 3 | 4 | 5,
+      roundNumber: songRecord.roundNumber,
+      queuePosition: songRecord.queuePosition,
+      rawAverage: songRecord.rawAverage,
+      weightedScore: songRecord.weightedScore,
+      confidenceModifier: songRecord.confidenceModifier,
+      finalScore: songRecord.finalScore,
+      voteDistribution: songRecord.voteDistribution 
+        ? JSON.parse(songRecord.voteDistribution) 
+        : null,
+      submittedAt: songRecord.submittedAt,
+    };
+  }
+
+  /**
    * Gets all songs for a party.
    * 
    * @param partyId - The party's unique ID
@@ -176,7 +215,7 @@ export class SongService {
       id: record.id,
       partyId: record.partyId,
       submitterId: record.submitterId,
-      soundcloudId: record.soundcloudId,
+      soundcloudId: Number(record.soundcloudId),
       title: record.title,
       artist: record.artist,
       artworkUrl: record.artworkUrl,
@@ -216,7 +255,7 @@ export class SongService {
       id: record.id,
       partyId: record.partyId,
       submitterId: record.submitterId,
-      soundcloudId: record.soundcloudId,
+      soundcloudId: Number(record.soundcloudId),
       title: record.title,
       artist: record.artist,
       artworkUrl: record.artworkUrl,
@@ -376,7 +415,7 @@ export class SongService {
         id: record.id,
         partyId: record.partyId,
         submitterId: record.submitterId,
-        soundcloudId: record.soundcloudId,
+        soundcloudId: Number(record.soundcloudId),
         title: record.title,
         artist: record.artist,
         artworkUrl: record.artworkUrl,
@@ -479,7 +518,7 @@ export class SongService {
       id: record.id,
       partyId: record.partyId,
       submitterId: record.submitterId,
-      soundcloudId: record.soundcloudId,
+      soundcloudId: Number(record.soundcloudId),
       title: record.title,
       artist: record.artist,
       artworkUrl: record.artworkUrl,
@@ -561,7 +600,7 @@ export class SongService {
       id: songRecord.id,
       partyId: songRecord.partyId,
       submitterId: songRecord.submitterId,
-      soundcloudId: songRecord.soundcloudId,
+      soundcloudId: Number(songRecord.soundcloudId),
       title: songRecord.title,
       artist: songRecord.artist,
       artworkUrl: songRecord.artworkUrl,

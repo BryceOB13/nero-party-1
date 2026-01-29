@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, useMotionValue, useTransform, useSpring, useReducedMotion } from 'framer-motion';
 import Particles, { initParticlesEngine } from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
@@ -160,7 +160,7 @@ export function HomeScreen() {
       >
         <GlassButton
           onClick={() => setMode('join')}
-          variant="secondary"
+          variant="outline"
           className="w-full py-4 sm:py-5 text-base sm:text-lg font-medium relative overflow-hidden group"
         >
           <motion.span

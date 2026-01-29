@@ -1,4 +1,4 @@
-# Nero Party 🎵
+# Nero Party
 
 A competitive listening party app where friends join, submit songs anonymously, vote on each other's picks, and crown a winning DJ.
 
@@ -10,7 +10,7 @@ A competitive listening party app where friends join, submit songs anonymously, 
 - **Round-based Gameplay** - Songs are organized into rounds with escalating weight multipliers
 - **Live Voting** - Rate songs 1-10 as they play with a smooth slider interface
 - **Dramatic Finale** - Scores freeze, identities reveal one-by-one, and the champion is crowned
-- **Theme System** - Party-wide and per-round themes add creative constraints
+- **Theme System** - Party-wide themes add creative constraints
 - **Glassmorphism UI** - Modern, beautiful interface with smooth animations
 
 ## Getting Started
@@ -19,7 +19,7 @@ A competitive listening party app where friends join, submit songs anonymously, 
 
 - Node.js 18+
 - npm
-- SoundCloud API credentials
+- SoundCloud API credentials (get them at https://developers.soundcloud.com/)
 
 ### Installation
 
@@ -29,9 +29,7 @@ npm install
 
 # Set up environment variables
 cp .env.example backend/.env
-# Edit backend/.env with your SoundCloud credentials:
-# SOUNDCLOUD_CLIENT_ID=your_client_id
-# SOUNDCLOUD_CLIENT_SECRET=your_client_secret
+# Edit backend/.env with your SoundCloud credentials
 
 # Set up the database
 cd backend && npx prisma db push && cd ..
@@ -41,24 +39,24 @@ npm run dev
 ```
 
 This will start:
-- Backend on `http://localhost:3000`
-- Frontend on `http://localhost:5173`
+- Backend on http://localhost:3000
+- Frontend on http://localhost:5173
 
 ### Environment Variables
 
 Create `backend/.env` with:
 
 ```env
-DATABASE_URL="file:./dev.db"
+PORT=3000
 SOUNDCLOUD_CLIENT_ID=your_soundcloud_client_id
 SOUNDCLOUD_CLIENT_SECRET=your_soundcloud_client_secret
 ```
 
 ## How to Play
 
-1. **Create a Party** - Host enters their name and creates a party with a shareable code
-2. **Join** - Friends enter the party code and their name to join
-3. **Configure** - Host can adjust settings (songs per player, themes)
+1. **Create a Party** - Host enters their name and creates a party with a shareable 4-letter code
+2. **Join** - Friends enter the party code and their name to join (minimum 3 players)
+3. **Configure** - Host can adjust settings (songs per player, play duration, themes)
 4. **Submit Songs** - Each player searches SoundCloud and submits their songs with confidence levels
 5. **Listen & Vote** - Songs play for everyone, players rate each song 1-10
 6. **Finale** - Scores are revealed, identities unveiled, and the winner is crowned!

@@ -317,11 +317,11 @@ describe('SongService', () => {
         const songData = createValidSongSubmission({ soundcloudId: 123456 });
         const song = await songService.submitSong(party.id, host.id, songData);
 
-        expect(song.soundcloudId).toBe(123456);
+        expect(Number(song.soundcloudId)).toBe(123456);
 
         // Verify in database
         const dbSong = await prisma.song.findUnique({ where: { id: song.id } });
-        expect(dbSong?.soundcloudId).toBe(123456);
+        expect(Number(dbSong?.soundcloudId)).toBe(123456);
       });
 
       it('should store title', async () => {

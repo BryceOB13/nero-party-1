@@ -390,6 +390,10 @@ export class ScoringService {
    * @returns The weight multiplier for the round
    */
   getWeightMultiplier(roundNumber: number, totalRounds: number): number {
+    // Handle invalid round numbers gracefully
+    // Round numbers should be 1-indexed and within bounds
+    const validRoundNumber = Math.max(1, Math.min(roundNumber, totalRounds));
+    
     // Requirement 6.2: 1 song per player = 1.5x for all
     if (totalRounds === 1) {
       return 1.5;
@@ -397,13 +401,13 @@ export class ScoringService {
     
     // Requirement 6.3: 2 songs per player = 1.0x for round 1, 2.0x for round 2
     if (totalRounds === 2) {
-      return roundNumber === 1 ? 1.0 : 2.0;
+      return validRoundNumber === 1 ? 1.0 : 2.0;
     }
     
     // Requirement 6.4: 3 songs per player = 1.0x, 1.5x, 2.0x
     if (totalRounds === 3) {
-      if (roundNumber === 1) return 1.0;
-      if (roundNumber === 2) return 1.5;
+      if (validRoundNumber === 1) return 1.0;
+      if (validRoundNumber === 2) return 1.5;
       return 2.0;
     }
     

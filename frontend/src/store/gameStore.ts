@@ -85,7 +85,13 @@ export const useGameStore = create<GameStore>((set, _get) => ({
   
   setGameState: (state) => set({ gameState: state }),
   
-  setPlayers: (players) => set({ players }),
+  setPlayers: (players) => set((state) => {
+    // Also update currentPlayer if it exists in the new players array
+    const updatedCurrentPlayer = state.currentPlayer 
+      ? players.find(p => p.id === state.currentPlayer?.id) ?? state.currentPlayer
+      : null;
+    return { players, currentPlayer: updatedCurrentPlayer };
+  }),
   
   addPlayer: (player) => set((state) => ({
     players: [...state.players.filter(p => p.id !== player.id), player]

@@ -108,6 +108,7 @@ export const AVATAR_SILHOUETTES: readonly string[] = [
  * Colors are chosen to match the glassmorphism design system
  * with neon accents (purple, cyan, pink) as specified in Requirement 13.3.
  * All colors are in hex format.
+ * Must support at least 20 players (max party size).
  */
 export const PLAYER_COLORS: readonly string[] = [
   // Primary neon colors (from design system)
@@ -131,6 +132,12 @@ export const PLAYER_COLORS: readonly string[] = [
   '#22D3EE', // Light Cyan (cyan-400)
   '#34D399', // Light Teal (emerald-400)
   '#FBBF24', // Amber (amber-400)
+  
+  // Additional colors for larger parties (up to 20 players)
+  '#FB7185', // Rose (rose-400)
+  '#38BDF8', // Sky Blue (sky-400)
+  '#A3E635', // Lime (lime-400)
+  '#FACC15', // Gold (yellow-400)
 ] as const;
 
 /**

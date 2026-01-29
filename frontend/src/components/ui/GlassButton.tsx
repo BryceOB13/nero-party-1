@@ -1,4 +1,4 @@
-import { forwardRef, ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, ReactNode } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 
 export type GlassButtonVariant = 'default' | 'primary' | 'outline' | 'ghost';

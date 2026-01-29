@@ -199,7 +199,7 @@ export function SubmittingScreen() {
           className="submitting-search-column flex flex-col min-h-0 gap-3 sm:gap-4"
         >
           {/* Search Section with internal scroll */}
-          <div className="flex-1 min-h-0 flex flex-col p-3 sm:p-4 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col p-3 sm:p-4 rounded-2xl glass-panel overflow-hidden">
             <SongSearch
               onSelectTrack={setSelectedTrack}
               selectedTrack={selectedTrack}
@@ -208,7 +208,7 @@ export function SubmittingScreen() {
           </div>
 
           {/* Confidence Slider */}
-          <div className="flex-shrink-0 p-3 sm:p-4 rounded-2xl bg-white/5 border border-white/10">
+          <div className="flex-shrink-0 p-3 sm:p-4 rounded-2xl glass-panel">
             <ConfidenceSlider
               value={confidence}
               onChange={setConfidence}
@@ -217,7 +217,7 @@ export function SubmittingScreen() {
           </div>
 
           {/* Submit Button */}
-          <div className="flex-shrink-0 p-3 sm:p-4 rounded-2xl bg-white/5 border border-white/10">
+          <div className="flex-shrink-0 p-3 sm:p-4 rounded-2xl glass-panel">
             <SubmitButton
               onSubmit={handleSubmit}
               disabled={!selectedTrack || hasReachedLimit}

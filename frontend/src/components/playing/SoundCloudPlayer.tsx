@@ -90,12 +90,12 @@ export function SoundCloudPlayer({
       try {
         await loadSCScript();
         
-        if (!window.SC || !iframeRef.current) return;
+        if (!window.SC?.Events || !iframeRef.current) return;
 
         const widget = new window.SC.Widget(iframeRef.current);
         widgetRef.current = widget;
 
-        // Bind events
+        // Bind events with safety checks
         widget.bind(window.SC.Events.READY, () => {
           if (autoPlay) {
             widget.play();
@@ -130,13 +130,19 @@ export function SoundCloudPlayer({
     initWidget();
 
     return () => {
-      if (widgetRef.current && window.SC) {
-        widgetRef.current.unbind(window.SC.Events.READY);
-        widgetRef.current.unbind(window.SC.Events.PLAY);
-        widgetRef.current.unbind(window.SC.Events.PAUSE);
-        widgetRef.current.unbind(window.SC.Events.FINISH);
-        widgetRef.current.unbind(window.SC.Events.PLAY_PROGRESS);
+      // Only unbind if both widget and SC API are available
+      if (widgetRef.current && window.SC?.Events) {
+        try {
+          widgetRef.current.unbind(window.SC.Events.READY);
+          widgetRef.current.unbind(window.SC.Events.PLAY);
+          widgetRef.current.unbind(window.SC.Events.PAUSE);
+          widgetRef.current.unbind(window.SC.Events.FINISH);
+          widgetRef.current.unbind(window.SC.Events.PLAY_PROGRESS);
+        } catch {
+          // Ignore errors during cleanup
+        }
       }
+      widgetRef.current = null;
     };
   }, [song, autoPlay, loadSCScript, onPlay, onPause, onFinish, onProgress]);
 

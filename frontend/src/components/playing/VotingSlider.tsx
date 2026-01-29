@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StarIcon from '@mui/icons-material/Star';
 import LockIcon from '@mui/icons-material/Lock';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
 import BoltIcon from '@mui/icons-material/Bolt';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';

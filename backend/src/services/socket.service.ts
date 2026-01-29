@@ -2394,6 +2394,25 @@ export class SocketService {
         return;
       }
 
+      // Get the song to check if player is voting on their own song
+      const song = await songService.getSong(songId);
+      if (!song) {
+        socket.emit('playing:error', {
+          code: 'SONG_NOT_FOUND',
+          message: 'Song does not exist'
+        });
+        return;
+      }
+
+      // Prevent self-voting
+      if (song.submitterId === player.id) {
+        socket.emit('playing:error', {
+          code: 'SELF_VOTE_NOT_ALLOWED',
+          message: 'You cannot vote on your own song'
+        });
+        return;
+      }
+
       // Cast the vote using scoringService
       const vote = await scoringService.castVote(songId, player.id, rating);
 
@@ -2422,6 +2441,31 @@ export class SocketService {
       if (allVotesIn) {
         // Requirement 5.8: Calculate and display the song's score
         await this.endSong(player.partyId, songId);
+        
+        // Start the next song or transition to FINALE if no more songs
+        const nextSong = await songService.getNextSong(player.partyId);
+        console.log(`All votes in for song ${songId}. Next song:`, nextSong ? nextSong.title : 'NONE (finale)');
+        
+        if (nextSong) {
+          // Small delay before starting next song to let results display
+          const partyId = player.partyId;
+          const songToStart = nextSong;
+          setTimeout(async () => {
+            try {
+              console.log(`Starting next song: ${songToStart.title} in party ${partyId}`);
+              await this.startSong(partyId, songToStart);
+            } catch (err) {
+              console.error('Error starting next song:', err);
+            }
+          }, 2000);
+        } else {
+          // No more songs - start the full finale sequence
+          // This will transition to FINALE, emit events, and run the full reveal sequence
+          console.log(`No more songs, starting finale sequence for party ${player.partyId}`);
+          this.startFinaleSequence(player.partyId).catch(err => {
+            console.error('Error running finale sequence:', err);
+          });
+        }
       }
     } catch (error: any) {
       console.error('Error during playing:vote:', error);
@@ -2478,15 +2522,28 @@ export class SocketService {
       }
 
       // Lock the vote using scoringService
-      const vote = await scoringService.lockVote(songId, player.id);
+      // If vote doesn't exist or is already locked, just return success
+      try {
+        const vote = await scoringService.lockVote(songId, player.id);
+        
+        // Emit confirmation to the player
+        socket.emit('playing:lock_vote_success', {
+          songId,
+          isLocked: vote.isLocked
+        });
 
-      // Emit confirmation to the player
-      socket.emit('playing:lock_vote_success', {
-        songId,
-        isLocked: vote.isLocked
-      });
-
-      console.log(`Vote locked by ${player.name} for song ${songId}`);
+        console.log(`Vote locked by ${player.name} for song ${songId}`);
+      } catch (lockError: any) {
+        // If vote doesn't exist or is already locked, just emit success
+        if (lockError.code === 'VOTE_NOT_FOUND' || lockError.code === 'VOTE_LOCKED') {
+          socket.emit('playing:lock_vote_success', {
+            songId,
+            isLocked: true
+          });
+          return;
+        }
+        throw lockError;
+      }
     } catch (error: any) {
       console.error('Error during playing:lock_vote:', error);
       socket.emit('playing:error', {
@@ -2528,6 +2585,7 @@ export class SocketService {
     // Get party settings for round info
     const settings = party.settings;
     const totalRounds = settings.songsPerPlayer || 2;
+    const playDuration = settings.playDuration || 30;
     
     // Count songs in this round to determine position
     const songsInRound = await prisma.song.count({
@@ -2556,8 +2614,10 @@ export class SocketService {
         duration: song.duration,
         permalinkUrl: song.permalinkUrl,
         roundNumber: song.roundNumber,
-        queuePosition: song.queuePosition
-        // Note: submitterId is NOT included to maintain anonymity
+        queuePosition: song.queuePosition,
+        // Include submitterId so players know if it's their own song (for self-vote prevention)
+        // The UI still shows "???" for anonymity, but uses this to disable voting on own songs
+        submitterId: song.submitterId
       },
       streamUrl,
       roundInfo: {
@@ -2570,6 +2630,35 @@ export class SocketService {
     });
 
     console.log(`Song started: "${song.title}" by ${song.artist} in party ${party.code}`);
+
+    // Auto-advance timer: if not all votes are in after playDuration + 10 seconds, force advance
+    const autoAdvanceDelay = (playDuration + 10) * 1000;
+    const songId = song.id;
+    setTimeout(async () => {
+      try {
+        // Check if song has already been scored (votes came in)
+        const songRecord = await prisma.song.findUnique({
+          where: { id: songId },
+          select: { finalScore: true }
+        });
+        
+        if (songRecord && songRecord.finalScore === null) {
+          console.log(`Auto-advancing song ${songId} after timeout`);
+          await this.endSong(partyId, songId);
+          
+          const nextSong = await songService.getNextSong(partyId);
+          if (nextSong) {
+            await this.startSong(partyId, nextSong);
+          } else {
+            this.startFinaleSequence(partyId).catch(err => {
+              console.error('Error running finale sequence:', err);
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error in auto-advance timer:', err);
+      }
+    }, autoAdvanceDelay);
   }
 
   /**
@@ -2646,7 +2735,10 @@ export class SocketService {
     const votes = await scoringService.getVotesForSong(songId);
 
     // Check if all eligible voters have voted
-    return votes.length >= eligibleVoters.length;
+    const allVotesIn = votes.length >= eligibleVoters.length;
+    console.log(`Vote check for song ${songId}: ${votes.length}/${eligibleVoters.length} votes (allVotesIn: ${allVotesIn})`);
+    
+    return allVotesIn;
   }
 
   /**
@@ -3024,6 +3116,10 @@ export class SocketService {
 
         // Requirement 8.5: Emit identity reveal with alias, real name, and songs
         // Requirement 18.3: Include vote comments for display during finale
+        // Calculate player's total score and rank
+        const playerTotalScore = playerSongs.reduce((sum, s) => sum + (s.finalScore ?? 0), 0);
+        const rank = revealOrder.length - i; // Last place is revealed first, so rank = total - index
+        
         this.broadcastToParty(partyId, 'finale:identity_revealed', {
           alias: identity.alias,
           realName: player.name,
@@ -3031,7 +3127,10 @@ export class SocketService {
           silhouette: identity.silhouette,
           color: identity.color,
           revealOrder: i + 1,
-          totalPlayers: revealOrder.length
+          totalPlayers: revealOrder.length,
+          playerId: player.id,
+          rank: rank,
+          finalScore: playerTotalScore
         });
 
         console.log(`Identity revealed: ${identity.alias} is ${player.name} (${i + 1}/${revealOrder.length})`);
@@ -3076,7 +3175,24 @@ export class SocketService {
       // Get the champion (first place)
       const champion = finalStandings[0];
 
+      // Debug logging for champion data
+      console.log(`Champion data being sent:`);
+      console.log(`  playerId: ${champion.playerId}`);
+      console.log(`  alias: ${champion.alias}`);
+      console.log(`  realName: ${champion.realName}`);
+      console.log(`  rank: ${champion.rank}`);
+      console.log(`  finalScore: ${champion.finalScore}`);
+      console.log(`  totalBaseScore: ${champion.totalBaseScore}`);
+      console.log(`  confidenceModifiers: ${champion.confidenceModifiers}`);
+      console.log(`  bonusPoints: ${champion.bonusPoints}`);
+
       // Requirement 8.6: Emit finale:champion with winner details and highest-scoring song
+      // Convert BigInt soundcloudId to Number to avoid JSON serialization error
+      const sanitizedSongs = (champion.songs || []).map(s => ({
+        ...s,
+        soundcloudId: Number(s.soundcloudId)
+      }));
+      
       this.broadcastToParty(partyId, 'finale:champion', {
         champion: {
           playerId: champion.playerId,
@@ -3087,7 +3203,8 @@ export class SocketService {
           totalBaseScore: champion.totalBaseScore,
           confidenceModifiers: champion.confidenceModifiers,
           bonusPoints: champion.bonusPoints,
-          bonusCategories: champion.bonusCategories,
+          bonusCategories: champion.bonusCategories || [],
+          songs: sanitizedSongs,
           highestSong: champion.highestSong ? {
             id: champion.highestSong.id,
             title: champion.highestSong.title,
@@ -3184,7 +3301,11 @@ export class SocketService {
       await this.delay(phaseDelayMs);
 
       // Phase 1: Reveal bonus categories
-      await this.handleFinaleRevealCategories(partyId, categoryRevealDelayMs);
+      try {
+        await this.handleFinaleRevealCategories(partyId, categoryRevealDelayMs);
+      } catch (err) {
+        console.error('Error in category reveals, continuing:', err);
+      }
 
       // Wait before starting prediction results reveal
       await this.delay(phaseDelayMs);
@@ -3193,28 +3314,44 @@ export class SocketService {
       // **Validates: Requirements 16.4, 17.5**
       // - 16.4: THE Prediction_System SHALL reveal prediction results during the finale
       // - 17.5: THE Scoring_System SHALL apply prediction bonuses during the finale reveal sequence
-      await this.handleFinaleRevealPredictions(partyId);
+      try {
+        await this.handleFinaleRevealPredictions(partyId);
+      } catch (err) {
+        console.error('Error in prediction reveals, continuing:', err);
+      }
 
       // Wait before starting identity reveals
       await this.delay(phaseDelayMs);
 
       // Phase 3: Reveal identities (last to first place)
-      await this.handleFinaleRevealIdentities(partyId, identityRevealDelayMs);
+      try {
+        await this.handleFinaleRevealIdentities(partyId, identityRevealDelayMs);
+      } catch (err) {
+        console.error('Error in identity reveals, continuing:', err);
+      }
 
       // Wait before crowning champion
       await this.delay(phaseDelayMs);
 
       // Phase 4: Crown the champion
-      await this.handleFinaleChampion(partyId);
+      try {
+        await this.handleFinaleChampion(partyId);
+      } catch (err) {
+        console.error('Error crowning champion, continuing:', err);
+      }
 
       // Transition to COMPLETE state
-      await partyService.transitionToComplete(partyId);
+      try {
+        await partyService.transitionToComplete(partyId);
 
-      // Broadcast state:changed to COMPLETE
-      this.broadcastToParty(partyId, 'state:changed', {
-        newState: PartyStatus.COMPLETE,
-        data: {}
-      });
+        // Broadcast state:changed to COMPLETE
+        this.broadcastToParty(partyId, 'state:changed', {
+          newState: PartyStatus.COMPLETE,
+          data: {}
+        });
+      } catch (err) {
+        console.error('Error transitioning to COMPLETE:', err);
+      }
 
       console.log(`Finale sequence completed for party ${party.code}`);
     } catch (error: any) {

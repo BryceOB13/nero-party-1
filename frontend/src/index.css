@@ -55,23 +55,69 @@
 
 /* Component layer - Reusable glass effect utilities */
 @layer components {
+  /* Glass texture noise overlay */
+  .glass-texture {
+    position: relative;
+  }
+  
+  .glass-texture::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+  
   /* Glass card base */
   .glass {
     @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl;
+    @apply glass-texture;
+    box-shadow: 
+      0 4px 30px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .glass-sm {
     @apply bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl;
+    @apply glass-texture;
+    box-shadow: 
+      0 2px 15px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   .glass-lg {
     @apply bg-white/15 backdrop-blur-lg border border-white/25 rounded-3xl;
+    @apply glass-texture;
+    box-shadow: 
+      0 8px 40px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
   /* Glass card with hover effect */
   .glass-hover {
     @apply glass transition-all duration-300;
-    @apply hover:bg-white/15 hover:border-purple-400/30 hover:shadow-neon-purple;
+    @apply hover:bg-white/15 hover:border-purple-400/30;
+    box-shadow: 
+      0 4px 30px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  
+  .glass-hover:hover {
+    box-shadow: 
+      0 8px 40px rgba(168, 85, 247, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+  
+  /* Glass panel - for larger sections */
+  .glass-panel {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl;
+    @apply glass-texture;
+    box-shadow: 
+      0 4px 30px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   /* Glass button styles */
@@ -81,6 +127,9 @@
     @apply transition-all duration-200;
     @apply hover:bg-white/20 hover:border-white/30;
     @apply focus:outline-none focus:ring-2 focus:ring-purple-400/50;
+    box-shadow: 
+      0 2px 10px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .glass-button-primary {
@@ -89,8 +138,10 @@
     @apply px-4 py-2 font-medium text-white;
     @apply transition-all duration-200;
     @apply hover:from-purple-500 hover:to-cyan-500 hover:border-purple-400/50;
-    @apply shadow-lg shadow-purple-500/20;
     @apply focus:outline-none focus:ring-2 focus:ring-purple-400/50;
+    box-shadow: 
+      0 4px 20px rgba(168, 85, 247, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
   /* Glass input styles */
@@ -324,6 +375,10 @@
   /* Simple fade in animation */
   .animate-fadeIn {
     animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
   }
 
   @keyframes fadeIn {

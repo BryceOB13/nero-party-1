@@ -1,4 +1,4 @@
-import { forwardRef, HTMLAttributes, ReactNode } from 'react';
+import { forwardRef, ReactNode } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 
 export interface GlassCardProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
@@ -18,6 +18,8 @@ export interface GlassCardProps extends Omit<HTMLMotionProps<'div'>, 'children'>
   padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
   /** Whether to animate on mount */
   animate?: boolean;
+  /** Whether to show texture overlay */
+  texture?: boolean;
 }
 
 const blurClasses = {
@@ -53,7 +55,8 @@ const paddingClasses = {
  * Features:
  * - Frosted glass effect with backdrop blur
  * - Semi-transparent backgrounds
- * - Subtle borders
+ * - Subtle borders with inner glow
+ * - Noise texture overlay for realistic glass
  * - Rounded corners
  * - Optional hover effects
  * - Configurable blur, opacity, and border intensity
@@ -69,6 +72,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       border = 'medium',
       padding = 'md',
       animate = true,
+      texture = true,
       ...motionProps
     },
     ref
@@ -76,16 +80,15 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
     const baseClasses = [
       'rounded-2xl',
       'border',
+      'relative',
       blurClasses[blur],
       opacityClasses[opacity],
       borderClasses[border],
       paddingClasses[padding],
-      'shadow-lg',
-      'shadow-black/10',
     ].join(' ');
 
     const hoverClasses = hoverable
-      ? 'transition-all duration-300 hover:bg-white/15 hover:border-purple-400/30 hover:shadow-purple-500/10'
+      ? 'transition-all duration-300 hover:bg-white/15 hover:border-purple-400/30'
       : '';
 
     const animationProps = animate
@@ -96,14 +99,34 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         }
       : {};
 
+    // Inline styles for glass effect
+    const glassStyle = {
+      boxShadow: hoverable
+        ? '0 4px 30px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+        : '0 4px 30px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+    };
+
     return (
       <motion.div
         ref={ref}
         className={`${baseClasses} ${hoverClasses} ${className}`}
+        style={glassStyle}
         {...animationProps}
         {...motionProps}
       >
-        {children}
+        {/* Noise texture overlay */}
+        {texture && (
+          <div 
+            className="absolute inset-0 rounded-2xl pointer-events-none opacity-[0.03] mix-blend-overlay"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+            }}
+          />
+        )}
+        {/* Content */}
+        <div className="relative z-10">
+          {children}
+        </div>
       </motion.div>
     );
   }

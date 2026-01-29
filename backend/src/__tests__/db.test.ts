@@ -241,7 +241,7 @@ describe('Database Schema', () => {
       });
 
       expect(song.id).toBeDefined();
-      expect(song.soundcloudId).toBe(789012);
+      expect(Number(song.soundcloudId)).toBe(789012);
       expect(song.title).toBe('Amazing Track');
       expect(song.artist).toBe('Cool Artist');
       expect(song.confidence).toBe(4);

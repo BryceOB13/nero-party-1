@@ -5,7 +5,7 @@ import { JoinCodeDisplay } from './JoinCodeDisplay';
 import { PlayerList } from './PlayerList';
 import { ThemeSelector } from './ThemeSelector';
 import { SettingsModal } from './SettingsModal';
-import { NeroLogo } from '../ui';
+import { NeroLogo, CompactLayout } from '../ui';
 import { PartySettings, PARTY_THEMES } from '../../types';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import GroupIcon from '@mui/icons-material/Group';
@@ -52,18 +52,56 @@ function LobbyContent() {
     socket.emit('lobby:start', {});
   };
 
-  return (
-    <div className="h-screen w-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-hidden animate-fadeIn">
-      {/* Header */}
-      <div className="px-4 pt-4 pb-3 text-center border-b border-white/10 flex-shrink-0">
-        <NeroLogo className="mx-auto w-28 sm:w-32 h-auto mb-2" width={128} height={36} />
-        <JoinCodeDisplay code={partyCode} compact />
-      </div>
+  // Header component
+  const header = (
+    <div className="px-4 pt-4 pb-3 text-center border-b border-white/10 flex-shrink-0">
+      <NeroLogo className="mx-auto w-28 sm:w-32 h-auto mb-2" width={128} height={36} />
+      <JoinCodeDisplay code={partyCode} compact />
+    </div>
+  );
 
+  // Footer component
+  const footer = (
+    <div className="px-4 py-3 border-t border-white/10 bg-black/20 backdrop-blur-sm flex items-center justify-between gap-3 flex-shrink-0">
+      <button
+        onClick={() => window.history.back()}
+        className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-all duration-150"
+        style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)' }}
+      >
+        <ArrowBackIcon fontSize="small" />
+      </button>
+      {isHost ? (
+        <button
+          onClick={handleStartGame}
+          disabled={players.length < 3}
+          className="flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm
+                     bg-gradient-to-r from-green-600 to-emerald-600 text-white
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     transition-all duration-150"
+          style={{ boxShadow: '0 4px 20px rgba(34, 197, 94, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)' }}
+        >
+          Start Game
+        </button>
+      ) : (
+        <div className="flex-1 text-center text-xs text-gray-400">
+          Waiting for host...
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <CompactLayout
+      header={header}
+      footer={footer}
+      background="gradient"
+      withOrbs={true}
+      contentClassName="animate-fadeIn"
+    >
       {/* Main Content - Two Panel Layout */}
-      <div className="flex-1 min-h-0 flex gap-4 p-4 overflow-hidden">
+      <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
         {/* Left Panel: Theme Selector */}
-        <div className="hidden lg:flex lg:w-80 flex-col min-h-0 p-4 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
+        <div className="hidden lg:flex lg:w-80 flex-col min-h-0 p-4 rounded-2xl glass-panel overflow-hidden">
           <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2 flex-shrink-0">
             <PaletteIcon sx={{ fontSize: 18 }} className="text-purple-400" />
             Pick Your Vibe
@@ -91,7 +129,7 @@ function LobbyContent() {
           {isHost && settings && (
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-150 flex items-center justify-between flex-shrink-0"
+              className="w-full p-4 rounded-2xl glass-panel hover:bg-white/10 hover:border-purple-500/30 transition-all duration-150 flex items-center justify-between flex-shrink-0"
             >
               <div className="flex items-center gap-3">
                 <SettingsIcon className="text-purple-400" sx={{ fontSize: 24 }} />
@@ -108,7 +146,7 @@ function LobbyContent() {
 
           {/* Non-host waiting message */}
           {!isHost && (
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3 flex-shrink-0">
+            <div className="p-4 rounded-2xl glass-panel flex items-center gap-3 flex-shrink-0">
               <HourglassEmptyIcon className="text-purple-400" sx={{ fontSize: 24 }} />
               <div>
                 <h3 className="text-sm font-semibold text-white">Waiting for Host</h3>
@@ -118,13 +156,14 @@ function LobbyContent() {
           )}
 
           {/* Players Panel */}
-          <div className="flex-1 min-h-0 p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 p-4 rounded-2xl glass-panel flex flex-col overflow-hidden">
             <div className="flex items-center justify-between mb-3 flex-shrink-0">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <GroupIcon fontSize="small" className="text-purple-400" />
                 Players
               </h3>
-              <span className="text-xs text-gray-400 bg-white/10 px-2 py-1 rounded-full">
+              <span className="text-xs text-gray-400 bg-white/10 px-2 py-1 rounded-full"
+                    style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)' }}>
                 {players.length}
               </span>
             </div>
@@ -139,7 +178,7 @@ function LobbyContent() {
           </div>
 
           {/* Mobile Theme Selector */}
-          <div className="lg:hidden p-4 rounded-2xl bg-white/5 border border-white/10 flex-shrink-0">
+          <div className="lg:hidden p-4 rounded-2xl glass-panel flex-shrink-0">
             <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
               <PaletteIcon sx={{ fontSize: 18 }} className="text-purple-400" />
               Pick Your Vibe
@@ -161,33 +200,6 @@ function LobbyContent() {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-3 border-t border-white/10 bg-black/20 flex items-center justify-between gap-3 flex-shrink-0">
-        <button
-          onClick={() => window.history.back()}
-          className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-all duration-150"
-        >
-          <ArrowBackIcon fontSize="small" />
-        </button>
-        {isHost ? (
-          <button
-            onClick={handleStartGame}
-            disabled={players.length < 3}
-            className="flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm
-                       bg-gradient-to-r from-green-600 to-emerald-600 text-white
-                       shadow-lg shadow-green-500/25 hover:shadow-green-500/40
-                       disabled:opacity-50 disabled:cursor-not-allowed
-                       transition-all duration-150"
-          >
-            Start Game
-          </button>
-        ) : (
-          <div className="flex-1 text-center text-xs text-gray-400">
-            Waiting for host...
-          </div>
-        )}
-      </div>
-
       {/* Settings Modal */}
       {settings && (
         <SettingsModal
@@ -198,7 +210,7 @@ function LobbyContent() {
           disabled={!isHost}
         />
       )}
-    </div>
+    </CompactLayout>
   );
 }
 

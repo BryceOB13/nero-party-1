@@ -126,8 +126,9 @@ function AppContent() {
     });
 
     // Handle identity assignment (triggers state change to SUBMITTING)
-    socket.on('identity:assigned', () => {
-      // Identity assigned - game will transition to SUBMITTING via state:changed
+    socket.on('identity:assigned', (data: { yourIdentity: any; allAliases: string[] }) => {
+      // Store the player's identity
+      useGameStore.getState().setMyIdentity(data.yourIdentity);
     });
 
     socket.on('lobby:player_joined', (data: { player: Player }) => {
@@ -142,7 +143,7 @@ function AppContent() {
       updateSettings(data.settings);
     });
 
-    socket.on('state:changed', (data: { newState: PartyStatus; data?: { party?: any; players?: Player[]; songs?: any[] } }) => {
+    socket.on('state:changed', (data: { newState: PartyStatus; data?: { party?: any; players?: Player[]; songs?: any[]; frozenStandings?: any[] } }) => {
       const store = useGameStore.getState();
       
       // Update party first (but it will set gameState to party.status)
@@ -158,6 +159,10 @@ function AppContent() {
       // Update songs if provided (for state transitions)
       if (data.data?.songs) {
         store.setSongs(data.data.songs);
+      }
+      // Store frozen standings for FINALE (before FinaleScreen mounts)
+      if (data.data?.frozenStandings) {
+        store.setLeaderboard(data.data.frozenStandings);
       }
     });
 
